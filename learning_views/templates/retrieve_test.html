@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>retrieve_test</title>
+</head>
+<body>
+  <div class="container">
+    <h1>{{ test.title }}</h1>
+    <p>Категория: {{ test.category }}</p>
+    <p>Описание: {{ test.description }}</p>
+    <p>: {{ test.created_at }}</p>
+    <p>: {{ test.updated_at }}</p>
+    <p>: {{ test.author }}</p>
+    <p>: {{ test.is_published }}</p>
+    <p>: {{ test.slug }}</p>
+    <img src="{{ test.cover.url }}" alt="Здесь должна быть фотка">
+  </div>
+</body>
+</html>

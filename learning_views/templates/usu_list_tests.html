@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_list_tests</title>
+</head>
+<body>
+  <div class="container">
+    {% for test in tests %}
+    <h1>usually CBV — Class-Based Views</h1>
+    <h2>{{ test.title }}</h2>
+        <p>{{ test.description }}</p>
+        <p>{{ test.category}}</p>
+        <img src="{{test.cover.url }}" alt="picture for test">
+        <hr>
+
+    {% endfor %}
+
+  </div>
+
+</body>
+</html>

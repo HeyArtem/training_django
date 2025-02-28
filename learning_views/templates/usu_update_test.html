@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Редактирование теста(usually CBV): {{ test.title }}</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Сохранить</button>
+        </form>
+        <a href="{% url 'usu_retrive' test.slug %}">Назад к тесту</a>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>list_tests</title>
+</head>
+<body>
+  <div class="container">
+    <ul>
+      {% for test in tests %}
+        <li>{{ test.title}}</li>
+        <li>{{ test.description}}</li>
+        <li>{{ test.category}}</li>
+      <hr>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>

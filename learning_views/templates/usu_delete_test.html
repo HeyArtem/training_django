@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_delete_test</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Хочешь удалить тест "{{ test.title }}"?</h2>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit">Ебнуть</button>
+        </form>
+        <a href="{% url 'usu_retrive' test.slug %}">может обратно!?</a>
+    </div>
+</body>
+</html>

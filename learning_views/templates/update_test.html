@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>update_test</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Редактирование теста</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Сохранить изменения</button>
+        </form>
+    </div>
+</body>
+</html>

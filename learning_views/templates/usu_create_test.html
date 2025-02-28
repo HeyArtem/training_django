@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_create_test</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Create test</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Create test</button>
+        </form>
+        <a href="{% url 'usu_list' %}">Вернуться к списку тестов</a>
+    </div>
+
+</body>
+</html>

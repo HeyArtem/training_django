@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_retrieve_test</title>
+</head>
+<body>
+<div class="container">
+    <h1> usu_retrieve_test </h1>
+    <h2>{{ test.title }}</h2>
+    <p><strong>Категория:</strong> {{ test.category }}</p>
+    <p><strong>Описание:</strong> {{ test.description }}</p>
+    <p><strong>Дата обновления:</strong> {{ test.updated_at }}</p>
+    <p><strong>Автор:</strong> {{ test.author }}</p>
+    <p><strong>Опубликован:</strong>
+        {% if test.is_published %}
+        Да
+        {% else %}
+        Нет
+        {% endif %}</p>
+    <p>: {{ test.created_at }}</p>
+
+    {% if test.cover %}
+    <img src="{{ test.cover.url }}" alt="Обложка" width="300">
+    {% endif %}
+
+    <br>
+    <a href="{% url 'usu_list' %}">Назад к списку тестов</a>
+
+
+</div>
+
+</body>
+</html>
