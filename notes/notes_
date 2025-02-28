@@ -1,0 +1,1794 @@
+учу вьюхи
+- Как работают и из отличие LoginView TemplateView, DetailView, CreateView
+- Почему в DetailView, def get_object(self, queryset=None), а в TemplateView get_context_data, или так везде
+- Чем отличается related_name="questions" от related_query_name="question",
+- Написать вьюху на классах, на дженериках (DetailView-это же дженерики), на функциях. Потренироваться на практике и получить из базы данных разную информацию, в том числе через связные модели (foreign key & many to many)
+- научиться писать get_context_data
+
+
+	mac (без доп директорий):
+% mkdir training_django
+% cd training_django
+% python3 -m venv venv
+% source venv/bin/activate
+% pip install -U pip
+% pip install -U setuptools
+	pip install -U pip && pip install -U setuptools
+
+	Если хочется ещё короче, то можно всё в одной команде:
+	pip install -U pip openpyxl pandas
+% brew update # Обновляет информацию о доступных пакетах
+% brew upgrade	# Обновляет установленные пакеты
+% brew cleanup	# Удаляет старые версии пакетов
+
+% pip install django==4.2.1
+% django-admin startproject config . # Точка (.) в конце говорит Django, что не надо создавать лишнюю вложенную папку!
+
+% python manage.py startapp learning_views # Создал приложение
+% python manage.py startapp models_app
+
+
+	-доп библ для python на unix системах
+% brew install postgresql python # Эквивалент команды sudo apt-get install libpq-dev python3-dev для macOS
+
+	-библиотека для PostgreSQL в языке программирования python ($ pipenv uninstall psycopg2 что бы удалить) самая популярная
+% pip install -U  psycopg2
+
+	-Помогает настройки, разбить на несколько файлов. -split-settings автоматич это все собирает (database.py+django.py )
+% pip install -U django-split-settings
+
+% pip install -U django-environ
+% pip install -U pillow
+
+В дире-рии conf:
+                rename settings.py --> settings_1.py
+                созд: Python Package settings
+
+                Внутри Python Package settings создаю:
+                        database.py,
+                        django.py,
+
+	Содержимое из conf/settings_1.py , копирую, вставляю в       conf/settings/django.py
+	Удаляю conf/settings_1.py
+
+	config/settings/django.py
+впиши когда запустишь!  впиши когда запустишь!  впиши когда запустишь!  впиши когда запустишь!
+
+
+
+create:
+	.env
+	.gitignore
+	.pre-commit-config.yaml
+
+	￼
+
+	in conf/settings/__init__.py:
+from split_settings.tools import include
+
+settings = [
+    "django.py",  # standard django settings
+    "database.py",  # postgres
+]
+
+# Include settings:
+include(*settings)
+
+
+	- Настраиваю проект. -
+Выношу подключение к БД в отдельный фаил
+	in conf/settings/django.py:
+
+вырезаю:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+
+
+	conf/settings/database.pyconf/settings/database.py
+from config.settings.django import env
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env("NAME", cast=str),
+        "USER": env("USER", cast=str),
+        "PASSWORD": env("PASSWORD", cast=str),
+        "HOST": env("HOST", cast=str),
+        "PORT": env("PORT", cast=str),
+    }
+}
+
+
+
+
+	-Создаю и Настраиваю PostGres (потом вставлю в .env) -
+$ pipenv install django-environ
+
+В корне проекта создаю фаил (просто фаил, не .py): .env
+	in .env:
+DATABASE_URL=postgres://hey_art:pass_hey_art@localhost:5432/training_django
+SECRET_KEY=django-insecure-jc2fx@c%^v3df#=ioav-!kyi0dz6ur%zmyord=9se@%blbf9b(
+DEBUG=True
+ALLOWED_HOSTS=*
+
+NAME=training_django
+USER=hey_art
+PASSWORD=pass_hey_art
+HOST=localhost
+PORT=5432
+
+
+
+
+        расшифровка:
+        [
+                Движок: postgres:
+                User: hey_art
+                Password: pass_hey_art
+                Name DataBase: training_django
+        ]
+
+
+% brew services list  #Проверить статус PostgreSQL (Аналог service postgresql status на Ubuntu:)
+% brew services info postgresql  # Аналог
+		brew services start postgresql  # Если PostgreSQL не запущен, то включаем:
+		brew services stop postgresql  #Остановить можно так:
+
+	Подключиться к PostgreSQL
+% psql postgres	# Аналог (sudo -i -u postgres)на Ubuntu:
+% psql -U postgres	# Аналог
+		createuser -s postgres Если выдаст ошибку "role postgres does not exist", создаем пользователя:
+
+	Создание базы данных и пользователя (сначало подключись)
+CREATE DATABASE training_django;
+CREATE USER hey_art WITH PASSWORD 'pass_hey_art';
+GRANT ALL PRIVILEGES ON DATABASE training_django TO hey_art;
+\q
+
+
+
+
+
+
+                Напоминашка по коматдам U создания пользователя и самой БД
+        $ sudo -i -u postgres
+        $ psql
+        CREATE DATABASE edu_quest;
+        CREATE USER hey_art_eq WITH PASSWORD 'PassFor_edu_quest';
+        GRANT ALL PRIVILEGES ON DATABASE edu_quest TO hey_art_eq;
+        \q
+        ctrl+d
+
+        DROP DATABASE edu_quest; - удалить БД
+
+
+                main command
+        service postgresql status # проверка статуса установки
+        \du – список пользователей
+        \l - список БД
+        \? – справочник команд
+        \q (или Ctrl+D) – выход с программы
+
+
+
+
+
+
+
+Из models_app Удаляю следующие файлы:
+        tests.py, views.py, admin.py, models.py
+
+В models_app создаю два Python Package:
+        admin,
+        models
+        (apps.py - указывает, что папка является приложением)
+
+
+	￼
+
+
+
+	Теперь нужно написать модели (каждая в отдельной папке)
+
+…
+…
+…
+
+	in models_app/models/__init__.py
+from models_app.models.answer.models import Answer
+from models_app.models.category.models import Category
+from models_app.models.favorite.models import Favorite
+from models_app.models.question.models import Question
+from models_app.models.test.models import Test
+from models_app.models.user.models import User
+from models_app.models.user_result.models import UserResult
+
+
+❗️❗️❗️-Настраиваю debuger
+        Current File-Edit Configuration-+-Python-Name('Debuger')-Script path(путь до manage.py)-
+                Parameters(runserver)-Apply OK
+
+
+├── api
+│   └── __init__.py
+├── config
+│   ├── __init__.py
+│   ├── asgi.py
+│   ├── settings
+│   │   ├── __init__.py
+│   │   ├── database.py
+│   │   └── django.py
+│   ├── urls.py
+│   └── wsgi.py
+├── db.sqlite3
+├── learning_views
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── migrations
+│   │   └── __init__.py
+│   ├── models.py
+│   ├── tests.py
+│   └── views.py
+├── manage.py
+├── models_app
+│   ├── __init__.py
+│   ├── admin
+│   │   └── __init__.py
+│   ├── apps.py
+│   ├── migrations
+│   │   └── __init__.py
+│   └── models
+│       ├── __init__.py
+│       ├── answer
+│       │   ├── __init__.py
+│       │   └── models.py
+│       ├── category
+│       │   ├── __init__.py
+│       │   └── models.py
+│       ├── favorite
+│       │   ├── __init__.py
+│       │   └── models.py
+│       ├── question
+│       │   ├── __init__.py
+│       │   └── models.py
+│       ├── test
+│       │   ├── __init__.py
+│       │   └── models.py
+│       ├── user
+│       │   ├── __init__.py
+│       │   └── models.py
+│       └── user_result
+│           ├── __init__.py
+│           └── models.py
+├── notes
+│   └── django_treining_mac.rtfd
+│       ├── Pasted Graphic 1.png
+│       ├── Pasted Graphic.png
+│       └── TXT.rtf
+├── requirements.txt
+├── structure.txt
+└── venv
+    ├── bin
+    │   ├── Activate.ps1
+    │   ├── activate
+    │   ├── activate.csh
+    │   ├── activate.fish
+    │   ├── django-admin
+    │   ├── pip
+    │   ├── pip3
+    │   ├── pip3.9
+    │   ├── python -> python3
+    │   ├── python3 -> /Library/Developer/CommandLineTools/usr/bin/python3
+    │   ├── python3.9 -> python3
+    │   ├── sqlformat
+    │   └── wheel
+    ├── include
+    ├── lib
+    │   └── python3.9
+    │       └── site-packages
+    └── pyvenv.cfg
+
+	config/urls.py
+from django.contrib import admin
+from django.urls import include, path
+from config.settings import django
+from django.conf.urls.static import static
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path("api/", include("api.urls")),
+    path("", include("learning_views.urls")),
+] + static(django.MEDIA_URL, document_root=django.MEDIA_ROOT)
+
+urlpatterns += static(django.STATIC_URL, document_root=django.STATIC_ROOT)
+
+
+	.gitignore
+
+	edu_quest/urls.py
+urlpatterns = [
+]
+
+% python manage.py makemigrations
+% python manage.py migrate
+% python manage.py createsuperuser
+% python manage.py createsuperuser
+
+⚡️Имя пользователя: admin
+Password: 1234
+
+http://127.0.0.1:8000/admin/
+
+
+Надо зарегать админку
+├── models_app
+│   ├── __init__.py
+│   ├── admin
+│   │   ├── __init__.py
+│   │   ├── answer
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   ├── category
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   ├── favorite
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   ├── question
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   ├── test
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   ├── user
+│   │   │   ├── __init__.py
+│   │   │   └── admin.py
+│   │   └── user_result
+│   │       ├── __init__.py
+│   │       └── admin.py
+
+
+
+
+
+
+
+
+
+
+ - - - - VIEWS НА ФУНКЦИЯХ FBV - - - -
+	(JsonResponse, render, return)
+
+FBV (Function-Based Views)
+	— представления, написанные как обычные функции. Они дают больше гибкости, но требуют больше кода.
+
+вар 1 - JsonResponse
+	learning_views/views/fn_index.py
+"""
+    JsonResponse
+    Используется, когда нужно вернуть данные в формате JSON (например, для API).
+    html - НЕ НУЖЕН !!!
+"""
+
+from django.http import JsonResponse
+
+def idex(request):
+    data = {"message": "Hello Art"}
+    return JsonResponse(data)
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import idex
+
+urlpatterns = [
+    path("st_fun_home/", idex, name="fn_index"),
+]
+
+
+вар 2 - HttpResponse
+	learning_views/views/fn_index.py
+"""
+    Этот вариант просто возвращает текст в браузер.
+    html - НЕ НУЖЕН !!!
+"""
+
+from django.http import HttpResponse
+
+def idex(request):
+    return HttpResponse("Hello Art from HttpResponse")
+
+	learning_views/urls.py - те же
+
+вар 3 - render
+	learning_views/views/fn_index.py
+"""
+    Классические Django-шаблоны (HTML)
+    Полная поддержка контекста, стилей, шаблонов
+"""
+
+
+from django.shortcuts import render
+
+def home(request):
+    context = {
+        "x": "Hello Art func",
+        "y": "This is a normal index from render"
+    }
+    return render(request, "st_fun_home.html", context)
+
+	learning_views/urls.py - те же
+from django.urls import path
+from learning_views.views.fn_index import index
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+]
+
+
+	learning_views/templates/fn_index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>fn_index</title>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ x }}</h1>
+        <h1>{{ y }}</h1>
+    </div>
+</body>
+</html>
+
+Способ
+Где используется?
+Преимущества
+Недостатки
+HttpResponse
+Простой текст (например, отладка, тестирование, возвращение HTML без шаблонов)
+Легкость, минимум кода
+Нет работы с контекстом и шаблонами
+JsonResponse
+API, AJAX-запросы, работа с фронтом
+Удобно для обмена данными (React, Vue, JS)
+Не подходит для вывода HTML
+render (шаблон)
+Классические Django-шаблоны (HTML)
+Полная поддержка контекста, стилей, шаблонов
+Требует больше кода и файлов
+
+
+вар 4 - вывод всех тестов.
+	learning_views/views/fn_list_test.py
+"""  FBv, вывожу все тесты  """
+
+from django.shortcuts import render
+from models_app.models.test.models import Test
+
+def list_tests(request):
+    tests = Test.objects.all()
+    return render(request, template_name="fn_list_tests.html", context={'tests':tests})
+
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBN (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+	learning_views/templates/fn_list_tests.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>fn_list_tests</title>
+</head>
+<body>
+<div class="container">
+    {% for test in tests %}
+    <h2>{{ test.title }}</h2>
+        <p>{{ test.description }}</p>
+        <p>{{ test.category}}</p>
+        <img src="{{test.cover.url }}" alt="picture for test">
+        <hr>
+    {% endfor %}
+</div>
+
+</body>
+</html>
+
+
+вар 5 - вывод одного теста (детальный).
+
+	learning_views/views/fn_retrive_test.py
+""" FBN вывод одного теста """
+
+from django.shortcuts import render, get_object_or_404
+from models_app.models.test.models import Test
+
+def retrive_test(request, slug):
+    test = get_object_or_404(Test, slug=slug)
+    return render(request, template_name="fn_retrieve_test.html", context={"test":test})
+
+
+	learning_views/templates/fn_retrieve_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>fn_retrieve_test</title>
+</head>
+<body>
+  <div class="container">
+    <h1>{{ test.title }}</h1>
+    <p>Категория: {{ test.category }}</p>
+    <p>Описание: {{ test.description }}</p>
+    <p>: {{ test.created_at }}</p>
+    <p>: {{ test.updated_at }}</p>
+    <p>: {{ test.author }}</p>
+    <p>: {{ test.is_published }}</p>
+    <p>: {{ test.slug }}</p>
+    <img src="{{ test.cover.url }}" alt="Здесь должна быть фотка">
+  </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBN (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+вар 6 - Создание теста (FBV).
+	learning_views/views/fn_create_test.py
+from django.shortcuts import render, redirect
+from models_app.models.test.models import Test
+from learning_views.forms import TestForm
+
+
+def create_test(request):
+    """
+        Создание теста
+        (slug-создается автоматич. в def generate_unique_slug(self):)
+
+        request.FILES — это словарь загруженных файлов (Если в форме есть файл
+        (например, картинка), он не передаётся через request.POST,
+        а идёт отдельно через request.FILES.). html-Форма должна содержать enctype="multipart/form-data", иначе файлы не передаются!
+    """
+    if request.method == "POST":
+        form = TestForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.instance.author = request.user  # Привязываем автора
+            form.save()
+            return redirect("fn_list")  # Перенаправление на список тестов
+    else:
+        form = TestForm()
+
+    return render(request, "fn_create_test.html", {"form": form})
+
+	learning_views/forms.py
+from django import forms
+from models_app.models.test.models import Test
+
+class TestForm(forms.ModelForm):
+    """
+        Форма используется при создании теста
+        в fn_create_test.py
+    """
+    class Meta:
+        model = Test
+        fields = ['title', 'category', 'description', 'is_published', 'cover']
+
+	learning_views/templates/fn_create_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Создать тест</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Создать тест</button>
+        </form>
+    <a href="{% url 'fn_list' %}">Вернуться к списку тестов</a>
+    </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+вар 7 - Обновление теста (FBV).
+	learning_views/views/fn_update_test.py
+from django.shortcuts import get_object_or_404, redirect, render
+from models_app.models.test.models import Test
+from learning_views.forms import TestForm
+
+
+# def update_test(request, id):
+def update_test(request, slug):
+    test = get_object_or_404(Test, slug=slug)
+
+    if request.method == "POST":
+        """
+        instance=test, Django не создаст новый объект, а обновит существующий.
+        Если не передавать instance, Django подумает, что создаётся новый объект.
+        """
+        form = TestForm(request.POST, instance=test)    # Форма заполняется данными test
+        if form.is_valid():
+            form.save()
+            return redirect("fn_test", slug=test.slug)  # Редирект на детальный просмотр
+    else:
+        # рендерим форму с заполненными данными.
+        form = TestForm(instance=test)
+
+    return render(request, "fn_update_test.html", {"form": form, "test": test})
+
+	learning_views/templates/fn_update_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div class="container">
+  <h2>Редактировать тест: {{ test.title }}</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Сохранить изменения</button>
+  </form>
+  <a href="{% url 'fn_test' test.id %}">Вернуться к тесту</a>
+</div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+вар 8 - Удаление теста (FBV).
+	learning_views/views/fn_delete_test.py
+from django.shortcuts import get_object_or_404, redirect, render
+from models_app.models.test.models import Test
+
+def delete_test(request, slug):
+    test = get_object_or_404(Test, slug=slug)
+
+    if request.method == "POST":
+        test.delete()
+        return redirect("list_tests")  # Редирект на список тестов
+
+    return render(request, "fn_delete_test.html", {"test": test})
+
+
+	learning_views/templates/fn_delete_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>fn_delete_test</title>
+</head>
+<body>
+  <div class="container">
+    <h2>Удалить тест: {{ test.title }}?</h2>
+    <p>Давай, хуйни его!!!</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit">Удалить тест</button>
+    </form>
+    <a href="{% url 'fn_list' %}">Отмена</a>
+  </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+ - - - - VIEWS НА class MyView(View)  - - - -
+	CBV — Class-Based Views
+
+вар 1 - JsonResponse
+	learning_views/views/view_index.py
+"""    index на классах (на обычных, без ListView, DetailView, UpdateView ...)  """
+
+"""
+    Вывод через class MyView(View)
+    JsonResponse В Шаблоне НЕ ЛОВИТЬ!
+"""
+
+from django.http import JsonResponse
+from django.views import View
+
+class MyView(View):
+    def get(self, request):
+        data = {"message": "Hello Art from Class-Based View"}
+        return JsonResponse(data)
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    path("view_index/", MyView.as_view(), name="view_index"),
+]
+
+
+вар 2 - HttpResponse
+	learning_views/views/view_index.py
+"""
+    Вывод через class MyView(View)
+    HttpResponse В Шаблоне НЕ ЛОВИТЬ!
+"""
+# Вывод через class MyView(View)-HttpResponse В Шаблоне НЕ ЛОВИТЬ!
+from django.http import HttpResponse
+from django.views import View
+
+class MyView(View):
+    def get(self, request):
+        return HttpResponse("Hello Art, this is HttpResponse")
+
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    path("view_index/", MyView.as_view(), name="view_index"),
+]
+
+
+вар 3 - render
+	learning_views/views/view_index.py
+"""
+    Вывод через class MyView(View)
+    render В этом варианте, я ловлю переменную "x" в html-шаблоне
+"""
+
+from django.shortcuts import render
+from django.views import View
+
+class MyView(View):
+    def get(self, request):
+        context = {
+            "x": "Hello Art class",
+            "y": "This is a normal index from render, from class MyView(View)"
+        }
+        return render(request, "index.html", context)
+
+	learning_views/templates/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>index (View)</title>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ x }}</h1>
+        <h1>{{ y }}</h1>
+    </div>
+</body>
+</html>
+
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    path("view_index/", MyView.as_view(), name="view_index"),
+]
+
+
+вар 4 - Вывод всех тестов (class ListTestsView(View)).
+	learning_views/views/usu_list_view_tests.py
+from django.shortcuts import render
+from django.views import View
+from models_app.models.test.models import Test
+
+class ListTestsView1(View):
+    def get(self, request):
+        tests = Test.objects.all()
+        return render(request, 'usu_list_tests.html', {'tests':tests})
+
+	learning_views/templates/usu_list_tests.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_list_tests</title>
+</head>
+<body>
+  <div class="container">
+    {% for test in tests %}
+    <h1>usually CBV — Class-Based Views</h1>
+    <h2>{{ test.title }}</h2>
+        <p>{{ test.description }}</p>
+        <p>{{ test.category}}</p>
+        <img src="{{test.cover.url }}" alt="picture for test">
+        <hr>
+
+    {% endfor %}
+
+  </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+
+# FBV (Function-Based Views)
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+# usually CBV — Class-Based Views
+from learning_views.views.view_index import MyView
+from learning_views.views.usu_list_view_tests import ListTestsView1
+
+
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # usually CBV — Class-Based Views
+    path("view_index/", MyView.as_view(), name="view_index"),
+    path("usu_list_tests/", ListTestsView1.as_view(), name="usu_list"),
+
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+
+вар 5 - Вывод одного теста (class RetrieveTestView(View)).
+
+	learning_views/views/usu_retrieve_view_test.py
+from django.shortcuts import render, get_object_or_404
+from django.views import View
+from models_app.models.test.models import Test
+
+class RetriveTestView1(View):
+    def get(self, request, slug):
+        test = get_object_or_404(Test, slug=slug)
+        return render(request, 'usu_retrieve_test.html', {'test':test})
+
+	learning_views/templates/usu_retrieve_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_retrieve_test</title>
+</head>
+<body>
+<div class="container">
+    <h1> usu_retrieve_test </h1>
+    <h2>{{ test.title }}</h2>
+    <p><strong>Категория:</strong> {{ test.category }}</p>
+    <p><strong>Описание:</strong> {{ test.description }}</p>
+    <p><strong>Дата обновления:</strong> {{ test.updated_at }}</p>
+    <p><strong>Автор:</strong> {{ test.author }}</p>
+    <p><strong>Опубликован:</strong>
+        {% if test.is_published %}
+        Да
+        {% else %}
+        Нет
+        {% endif %}</p>
+    <p>: {{ test.created_at }}</p>
+
+    {% if test.cover %}
+    <img src="{{ test.cover.url }}" alt="Обложка" width="300">
+    {% endif %}
+
+    <br>
+    <a href="{% url 'usu_list' %}">Назад к списку тестов</a>
+
+
+</div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+
+# FBV (Function-Based Views)
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+# usually CBV — Class-Based Views
+from learning_views.views.view_index import MyView
+from learning_views.views.usu_list_view_tests import ListTestsView1
+from learning_views.views.usu_retrieve_view_test import RetriveTestView1
+
+
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # usually CBV — Class-Based Views
+    path("view_index/", MyView.as_view(), name="view_index"),
+    path("usu_list_tests/", ListTestsView1.as_view(), name="usu_list"),
+    path("usu_retrieve_test/<slug:slug>/", RetriveTestView1.as_view(), name="usu_retrive"),
+
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+вар 6 - Создание теста (class CreateTestView(View)).
+	learning_views/views/usu_create_test.py
+from django.shortcuts import render, redirect
+from django.views import View
+from learning_views.forms import TestForm
+
+
+class CreateTestView1(View):
+    def get(self, request):
+        """ рендерит пустую форму """
+        form = TestForm()
+        return render(request, 'usu_create_test.html', {'form':form})
+
+    def post(self, request):
+        """ проверяет данные, сохраняет тест и перенаправляет """
+        form = TestForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.instance.author = request.user
+            form.save()
+            return redirect('usu_list')
+        return render(request, 'usu_create_test.html', {'form':form})
+
+	learning_views/templates/usu_create_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_create_test</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Create test</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Create test</button>
+        </form>
+        <a href="{% url 'usu_list' %}">Вернуться к списку тестов</a>
+    </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+
+# FBV (Function-Based Views)
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+# usually CBV — Class-Based Views
+from learning_views.views.view_index import MyView
+from learning_views.views.usu_list_view_tests import ListTestsView1
+from learning_views.views.usu_retrieve_view_test import RetriveTestView1
+from learning_views.views.usu_create_test import CreateTestView1
+
+
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # usually CBV — Class-Based Views
+    path("view_index/", MyView.as_view(), name="view_index"),
+    path("usu_list_tests/", ListTestsView1.as_view(), name="usu_list"),
+    path("usu_retrieve_test/<slug:slug>/", RetriveTestView1.as_view(), name="usu_retrive"),
+    path("usu_create_test/", CreateTestView1.as_view(), name="usu_create"),
+
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+вар 7 - Обновление теста (class UpdateTestView(View)).
+	learning_views/views/usu_update_test.py
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views import View
+from learning_views.forms import TestForm
+from models_app.models.test.models import Test
+
+
+class UpdateTestView1(View):
+    def get(self, request, slug):
+        test = get_object_or_404(Test, slug=slug)
+        form = TestForm(instance=test)
+        return render(request, 'usu_update_test.html', {'test':test, 'form':form})
+
+    def post(self, request, slug):
+        test = get_object_or_404(Test, slug=slug)
+        form = TestForm(request.POST, request.FILES, instance=test)
+        if form.is_valid():
+            form.save()
+            return redirect('usu_retrive', slug=slug)
+        return render(request, 'usu_update_test.html', {'form':form, 'test':test})
+
+	learning_views/templates/usu_update_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Редактирование теста(usually CBV): {{ test.title }}</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Сохранить</button>
+        </form>
+        <a href="{% url 'usu_retrive' test.slug %}">Назад к тесту</a>
+
+    </div>
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+
+# FBV (Function-Based Views)
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+# usually CBV — Class-Based Views
+from learning_views.views.view_index import MyView
+from learning_views.views.usu_list_view_tests import ListTestsView1
+from learning_views.views.usu_retrieve_view_test import RetriveTestView1
+from learning_views.views.usu_create_test import CreateTestView1
+from learning_views.views.usu_update_test import UpdateTestView1
+
+
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # usually CBV — Class-Based Views
+    path("view_index/", MyView.as_view(), name="view_index"),
+    path("usu_list_tests/", ListTestsView1.as_view(), name="usu_list"),
+    path("usu_retrieve_test/<slug:slug>/", RetriveTestView1.as_view(), name="usu_retrive"),
+    path("usu_create_test/", CreateTestView1.as_view(), name="usu_create"),
+    path("usu_update_test/<slug:slug>/", UpdateTestView1.as_view(), name="usu_update"),
+
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+вар 8 - Удаление теста (class DeleteTestView(View)).
+	learning_views/views/usu_delete_test.py
+from django.template.context_processors import request
+from django.views import View
+from django.shortcuts import redirect, render, get_object_or_404
+from models_app.models.test.models import Test
+
+
+class DeleteTestView1(View):
+    def get(self, request, slug):
+        test = get_object_or_404(Test, slug=slug)
+        return render(request, 'usu_delete_test.html', {'test':test})
+
+    def post(self, request, slug):
+        test = get_object_or_404(Test, slug=slug)
+        test.delete()
+        return redirect('usu_list')
+
+	learning_views/templates/usu_delete_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>usu_delete_test</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Хочешь удалить тест "{{ test.title }}"?</h2>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit">Ебнуть</button>
+        </form>
+        <a href="{% url 'usu_retrive' test.slug %}">может обратно!?</a>
+    </div>
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+
+# FBV (Function-Based Views)
+from learning_views.views.fn_index import index
+from learning_views.views.fn_list_test import list_tests
+from learning_views.views.fn_retrive_test import retrive_test
+from learning_views.views.fn_create_test import create_test
+from learning_views.views.fn_update_test import update_test
+from learning_views.views.fn_delete_test import delete_test
+
+# usually CBV — Class-Based Views
+from learning_views.views.view_index import MyView
+from learning_views.views.usu_list_view_tests import ListTestsView1
+from learning_views.views.usu_retrieve_view_test import RetriveTestView1
+from learning_views.views.usu_create_test import CreateTestView1
+from learning_views.views.usu_update_test import UpdateTestView1
+from learning_views.views.usu_delete_test import DeleteTestView1
+
+
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    # FBV (Function-Based Views)
+    path("st_fun_home/", index, name="fn_index"),
+    path("fn_list_test/", list_tests, name="fn_list"),
+    path("fn_retrive_test/<slug:slug>/", retrive_test, name="fn_test"),
+    path("fn_create/", create_test, name="create_test"),
+    path("fn_update/<slug:slug>/", update_test, name="fn_update"),
+    path("fn_delete_test/<slug:slug>/", delete_test, name="delete"),
+
+
+    # usually CBV — Class-Based Views
+    path("view_index/", MyView.as_view(), name="view_index"),
+    path("usu_list_tests/", ListTestsView1.as_view(), name="usu_list"),
+    path("usu_retrieve_test/<slug:slug>/", RetriveTestView1.as_view(), name="usu_retrive"),
+    path("usu_create_test/", CreateTestView1.as_view(), name="usu_create"),
+    path("usu_update_test/<slug:slug>/", UpdateTestView1.as_view(), name="usu_update"),
+    path("usu_delete_test/<slug:slug>/", DeleteTestView1.as_view(), name="usu_delete"),
+
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ - - - - VIEWS НА generic CBV - - - -
+		( ListView, DetailView, )
+
+CBV (Class-Based Views)
+	— представления, написанные с использованием классов.
+	Django предлагает дженерики (ListView, DetailView, CreateView и т. д.), которые упрощают работу.
+
+вар 1 - ListView
+	learning_views/views/list_view_index.py
+"""
+    ListView – вывод списка объектов
+    Используется, когда нужно вывести сразу несколько объектов (например, список тестов).
+"""
+
+
+from django.views.generic import ListView
+from models_app.models.test.models import Test
+
+class ListTestsView(ListView):
+    model = Test
+    template_name = "list_tests.html"
+    context_object_name = "tests"
+
+	learning_views/templates/list_tests.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>list_tests</title>
+</head>
+<body>
+  <div class="container">
+    <ul>
+      {% for test in tests %}
+      <li>{{ test.title}}</li>
+      <li>{{ test.description}}</li>
+      <li>{{ test.category}}</li>
+      <hr>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+]
+
+
+вар 2 - DetailView
+	learning_views/views/retrieve_view_test.py
+"""
+    DetailView – вывод одного объекта
+    Используется, когда нужно отобразить один конкретный объект из БД.
+"""
+
+from django.views.generic import DetailView
+from models_app.models.test.models import Test  # Импортируем модель
+
+class RetrieveTestView(DetailView):
+    model = Test
+    template_name = "retrieve_test.html"
+    context_object_name = "test
+
+
+	learning_views/templates/retrieve_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>retrieve_test</title>
+</head>
+<body>
+  <div class="container">
+    <h1>{{ test.title }}</h1>
+    <p>Категория: {{ test.category }}</p>
+    <p>Описание: {{ test.description }}</p>
+    <p>: {{ test.created_at }}</p>
+    <p>: {{ test.updated_at }}</p>
+    <p>: {{ test.author }}</p>
+    <p>: {{ test.is_published }}</p>
+    <p>: {{ test.slug }}</p>
+	<img src="{{ test.cover.url }}" alt="Здесь должна быть фотка">
+
+  </div>
+</body>
+</html>
+
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="RetrieveTestView")
+
+]
+
+
+
+вар 3 - CreateView
+	learning_views/views/create_view_test.py
+"""
+    CreateView – создание нового объекта
+    Используется, когда нужно создать новый объект через форму.
+"""
+
+from django.views.generic import CreateView
+from models_app.models.test.models import Test
+from django.urls import reverse_lazy
+
+class CreateTestView(CreateView):
+    model = Test
+    fields = [
+        "title",
+        "category",
+        "description",
+        "slug",
+        "author",
+    ]
+    template_name = "create_test.html"
+    # Перенаправление при успехе
+    success_url = reverse_lazy("generic_index")
+
+"""
+    reverse_lazy() откладывает вычисление URL до момента, когда он реально понадобится.
+    Это полезно в CreateView, UpdateView, DeleteView, потому что Django сначала загружает код вьюхи,
+    а потом уже обрабатывает URL-ы.
+    Какие ещё есть варианты?
+    ✅ reverse() – вычисляет URL сразу (не откладывает, как reverse_lazy).
+"""
+
+	learning_views/templates/create_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>create_test</title>
+</head>
+  <body>
+    <div class="container">
+      <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Создать</button>
+      </form>
+    </div>
+  </body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+]
+
+
+вар 3 - UpdateView
+
+	learning_views/views/update_view_test.py
+from django.views.generic import UpdateView
+from models_app.models.test.models import Test
+from django.urls import reverse_lazy
+
+class UpdateTestView(UpdateView):
+    model = Test
+    fields = [
+        "title",
+        "category",
+        "description",
+        "slug"
+    ]
+    template_name = "update_test.html"
+
+# todo а как еще можно перенаправить и если нет slug???
+    def get_success_url(self):
+        return reverse_lazy("retrieve_test_view", kwargs={"slug": self.object.slug})
+
+
+	learning_views/templates/update_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>update_test</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Редактирование теста</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Сохранить изменения</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+]
+
+
+вар 4 - DeleteView
+	learning_views/views/delete_view_test.py
+from django.views.generic import DeleteView
+from models_app.models.test.models import Test
+from django.urls import reverse_lazy
+
+class DeleteTestView(DeleteView):
+    model = Test
+    template_name = "delete_test.html"
+    success_url = reverse_lazy("generic_index")
+
+	learning_views/templates/delete_test.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>delete_test</title>
+</head>
+<body>
+  <div class="container">
+    <h1>Удалить тест "{{ object.title }}"?</h1>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit">Удалить</button>
+    </form>
+    <a href="{% url 'generic_index' %}">Отмена</a>
+  </div>
+
+</body>
+</html>
+
+	learning_views/urls.py
+from django.urls import path
+from learning_views.views.fn_index import index
+from learning_views.views.view_index import MyView
+from learning_views.views.list_view_index import ListTestsView
+from learning_views.views.retrieve_view_test import RetrieveTestView
+from learning_views.views.create_view_test import CreateTestView
+from learning_views.views.update_view_test import UpdateTestView
+from learning_views.views.delete_view_test import DeleteTestView
+
+urlpatterns = [
+    path("st_fun_home/", index, name="fn_index"),
+    # как здесь create
+
+    # View
+    path("view_index/", MyView.as_view(), name="view_index"),
+    # как здесь create
+
+    # generic
+    path("generic_index/", ListTestsView.as_view(), name="generic_index"),
+    path("retrievetestview/<slug:slug>/", RetrieveTestView.as_view(), name="retrieve_test_view"),
+    path("createtestview/", CreateTestView.as_view(), name="create_test_view"),
+    path("test/<slug:slug>/update/", UpdateTestView.as_view(), name="update_test"),
+    path("test/<slug:slug>/delete/", DeleteTestView.as_view(), name="delete_test"),
+]
+
+
+
+
+
+
+CRUD-операциями (Create, Retrieve, List, Update, Delete), потому что CRUD-логика относится к уровням views и models.
+
+Да, ты прав, можно писать вьюхи:
+	•	На функциях (def my_view(request))
+	•	На классах (class MyView(View))
+	•	На дженериках (DetailView, CreateView, ListView и другие)
+	•	Через API (например, с использованием Django Rest Framework)
+	•	Через middleware (но это редкий случай)
+		"Middleware не предназначены для работы с CRUD-операциями" 	Да, неожиданно, но middleware работают на уровне запросов и ответов. Они не предназначены для работы с конкретными моделями (например, Test).
+	Middleware можно сравнить с фильтрами, через которые проходят все запросы в Django. Они запускаются до того, как запрос попадет во view, и после того, как view 		вернет ответ.
+
+	•	Через CBV mixins (это гибридный подход)
+
+
+
+!  !  !  !  Изменить в перспективе!  !  !  !  !  !
+* что бы картинка к вопросу не была обязательной
+
+!  !  !  !  !  !  !  !  !  !  !  !  !  !  !  !
+
+
+* * * * Доп навыки * * * *
+	Показать структуру проекта в графическом виде:
+brew install tree  # для macOS 	# Если tree не установлен, сначала установи его:
+tree	# вывести дерево папок:
+tree -L 2	# показать только 2-3 уровня вложенности:
+tree > structure.txt
+* * * * * * * * * * * * * * * *
+
+
+
